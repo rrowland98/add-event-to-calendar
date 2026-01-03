@@ -1,0 +1,5 @@
+{
+  "name": "Add Events to My Calendar",
+  "description": "A professional tool to generate calendar links (Google, Outlook, Yahoo) and .ics files with custom reminders.",
+  "requestFramePermissions": []
+}
