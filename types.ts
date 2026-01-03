@@ -12,6 +12,14 @@ export interface EventData {
   recurrence: RecurrenceSettings | null;
 }
 
+// Interface for local storage history
+export interface SavedEvent {
+  id: string;
+  createdAt: number;
+  data: EventData;
+  link: string;
+}
+
 export type RecurrenceFrequency = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
 
 export interface RecurrenceSettings {

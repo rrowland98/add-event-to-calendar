@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import EventForm from './components/EventForm';
 import EventPreview from './components/EventPreview';
-import { EventData, INITIAL_EVENT_DATA } from './types';
+import EventHistoryModal from './components/EventHistoryModal';
+import { EventData, INITIAL_EVENT_DATA, SavedEvent } from './types';
 import { encodeEventData, decodeEventData, shortenUrl } from './utils/urlUtils';
 
 const App: React.FC = () => {
   const [eventData, setEventData] = useState<EventData>(INITIAL_EVENT_DATA);
   const [isAttendeeMode, setIsAttendeeMode] = useState(false);
+  
+  // History State
+  const [history, setHistory] = useState<SavedEvent[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
 
   useEffect(() => {
     // Check for data param in URL on load
@@ -19,18 +24,67 @@ const App: React.FC = () => {
         setIsAttendeeMode(true);
       }
     }
+
+    // Load history from local storage
+    const savedHistory = localStorage.getItem('event_history');
+    if (savedHistory) {
+      try {
+        setHistory(JSON.parse(savedHistory));
+      } catch (e) {
+        console.error("Failed to parse history", e);
+      }
+    }
   }, []);
+
+  const addToHistory = (data: EventData, link: string) => {
+    // Prevent duplicates if the user clicks generate multiple times on the same data
+    const lastEvent = history[0];
+    const isDuplicate = lastEvent && JSON.stringify(lastEvent.data) === JSON.stringify(data);
+
+    if (isDuplicate) {
+        // If exact same data, just update the link (in case shortening changed) and timestamp
+        const updated = [...history];
+        updated[0] = { ...updated[0], link, createdAt: Date.now() };
+        setHistory(updated);
+        localStorage.setItem('event_history', JSON.stringify(updated));
+        return;
+    }
+
+    const newEvent: SavedEvent = {
+      id: Date.now().toString(),
+      createdAt: Date.now(),
+      data: { ...data }, // store copy
+      link
+    };
+    
+    const updatedHistory = [newEvent, ...history];
+    setHistory(updatedHistory);
+    localStorage.setItem('event_history', JSON.stringify(updatedHistory));
+  };
+
+  const deleteFromHistory = (id: string) => {
+    const updatedHistory = history.filter(h => h.id !== id);
+    setHistory(updatedHistory);
+    localStorage.setItem('event_history', JSON.stringify(updatedHistory));
+  };
+
+  const loadFromHistory = (saved: SavedEvent) => {
+    setEventData(saved.data);
+    setShowHistory(false);
+  };
 
   const handleGenerateShareLink = async () => {
     const encoded = encodeEventData(eventData);
     // Use window.location.href split by ? to ensure we get the correct base URL
-    // without duplicating protocols or missing paths in various hosting environments.
     const baseUrl = window.location.href.split('?')[0];
     const longUrl = `${baseUrl}?data=${encoded}`;
     
     // Attempt to shorten the URL
     const finalUrl = await shortenUrl(longUrl);
     
+    // Save to history
+    addToHistory(eventData, finalUrl);
+
     return navigator.clipboard.writeText(finalUrl);
   };
 
@@ -38,10 +92,29 @@ const App: React.FC = () => {
     <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 font-sans">
       <div className="max-w-6xl mx-auto">
         
-        {/* Header - Only show in Admin mode or if requested, 
-            but usually attendee view is cleaner without branding overload */}
+        {/* Header - Only show in Admin mode */}
         {!isAttendeeMode && (
-          <div className="mb-10 text-center">
+          <div className="mb-10 text-center relative">
+            {/* History Toggle Button */}
+            <div className="absolute right-0 top-0 hidden sm:block">
+              <button 
+                onClick={() => setShowHistory(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-white text-slate-600 rounded-lg border border-slate-200 hover:border-blue-400 hover:text-blue-600 transition-colors shadow-sm text-sm font-medium"
+              >
+                <i className="fas fa-history"></i>
+                <span>My Events</span>
+              </button>
+            </div>
+            {/* Mobile History Button */}
+            <div className="sm:hidden flex justify-end mb-4">
+               <button 
+                onClick={() => setShowHistory(true)}
+                className="text-slate-500 hover:text-blue-600 transition-colors"
+              >
+                <i className="fas fa-history text-xl"></i>
+              </button>
+            </div>
+
             <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight mb-2">
               Add to My Calendar
             </h1>
@@ -85,6 +158,16 @@ const App: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* History Modal */}
+      {showHistory && (
+        <EventHistoryModal 
+          history={history} 
+          onClose={() => setShowHistory(false)}
+          onLoad={loadFromHistory}
+          onDelete={deleteFromHistory}
+        />
+      )}
     </div>
   );
 };
