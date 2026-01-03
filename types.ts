@@ -9,6 +9,18 @@ export interface EventData {
   description: string;
   reminderMinutes: number;
   imageUrl: string | null;
+  recurrence: RecurrenceSettings | null;
+}
+
+export type RecurrenceFrequency = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
+
+export interface RecurrenceSettings {
+  frequency: RecurrenceFrequency;
+  interval: number;
+  ends: 'never' | 'on' | 'after';
+  endDate: string | null; // YYYY-MM-DD
+  count: number | null;
+  weekDays: string[]; // SU, MO, TU, WE, TH, FR, SA
 }
 
 export const TIMEZONES = [
@@ -32,6 +44,16 @@ export const REMINDERS = [
   { value: 1440, label: '24 hours before' },
 ];
 
+export const WEEK_DAYS = [
+  { value: 'MO', label: 'M' },
+  { value: 'TU', label: 'T' },
+  { value: 'WE', label: 'W' },
+  { value: 'TH', label: 'T' },
+  { value: 'FR', label: 'F' },
+  { value: 'SA', label: 'S' },
+  { value: 'SU', label: 'S' },
+];
+
 // Helper to safely get local timezone
 const getLocalTimezone = () => {
   try {
@@ -42,14 +64,15 @@ const getLocalTimezone = () => {
 };
 
 export const INITIAL_EVENT_DATA: EventData = {
-  title: 'Strategy Workshop: Q4 Planning',
+  title: '',
   startDate: new Date().toISOString().split('T')[0],
   startTime: '09:00',
   endDate: new Date().toISOString().split('T')[0],
   endTime: '10:00',
   timezone: getLocalTimezone(),
-  location: 'https://zoom.us/j/123456789',
-  description: 'Join us for a deep dive into our Q4 strategy. We will cover marketing goals, product roadmap, and team allocation.\n\nPlease come prepared with your department reports.',
+  location: '',
+  description: '',
   reminderMinutes: 30,
   imageUrl: null,
+  recurrence: null,
 };

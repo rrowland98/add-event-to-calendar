@@ -1,10 +1,7 @@
-import { EventData } from '../types';
+import { EventData, RecurrenceSettings } from '../types';
 
 /**
  * Helper to convert date/time strings into a UTC Date object relative to the selected timezone.
- * Note: A full implementation would use a library like `date-fns-tz`. 
- * For this demo, we assume the user's browser context or simple ISO conversion 
- * suffices for the "universal" logic, or we construct generic UTC strings.
  */
 const toDateObj = (date: string, time: string): Date => {
   return new Date(`${date}T${time}:00`);
@@ -12,6 +9,32 @@ const toDateObj = (date: string, time: string): Date => {
 
 const formatICSDate = (date: Date): string => {
   return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+};
+
+/**
+ * Builds the RFC 5545 RRULE string
+ */
+const buildRRule = (settings: RecurrenceSettings): string => {
+  const parts = [`FREQ=${settings.frequency}`];
+  
+  if (settings.interval > 1) {
+    parts.push(`INTERVAL=${settings.interval}`);
+  }
+
+  if (settings.frequency === 'WEEKLY' && settings.weekDays.length > 0) {
+    parts.push(`BYDAY=${settings.weekDays.join(',')}`);
+  }
+
+  if (settings.ends === 'after' && settings.count) {
+    parts.push(`COUNT=${settings.count}`);
+  } else if (settings.ends === 'on' && settings.endDate) {
+    // UNTIL must be in UTC YYYYMMDDTHHMMSSZ format
+    // We'll set it to end of that day
+    const untilDate = new Date(`${settings.endDate}T23:59:59`);
+    parts.push(`UNTIL=${formatICSDate(untilDate)}`);
+  }
+
+  return parts.join(';');
 };
 
 /**
@@ -30,11 +53,18 @@ export const generateGoogleLink = (event: EventData): string => {
     ctz: event.timezone, 
   });
 
+  if (event.recurrence) {
+    const rrule = buildRRule(event.recurrence);
+    params.append('recur', `RRULE:${rrule}`);
+  }
+
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 };
 
 /**
  * Constructs an Outlook.com (Live) URL
+ * Note: Outlook Web Link (compose) has limited support for Recurrence via URL params.
+ * Users should rely on ICS for complex recurrence.
  */
 export const generateOutlookLink = (event: EventData): string => {
   const start = toDateObj(event.startDate, event.startTime).toISOString();
@@ -71,6 +101,9 @@ export const generateYahooLink = (event: EventData): string => {
     in_loc: event.location,
   });
 
+  // Yahoo supports DUR (duration) and REPEAT, but it's very brittle via URL.
+  // We strictly output single event for Yahoo web link to avoid errors.
+
   return `https://calendar.yahoo.com/?${params.toString()}`;
 };
 
@@ -83,7 +116,6 @@ export const generateICSFile = (event: EventData): string => {
   const now = formatICSDate(new Date());
 
   // Calculate VALARM Trigger
-  // Format: -PT15M, -PT1H, etc.
   let alarmTrigger = '-PT15M';
   if (event.reminderMinutes % 60 === 0) {
     alarmTrigger = `-PT${event.reminderMinutes / 60}H`;
@@ -106,7 +138,14 @@ export const generateICSFile = (event: EventData): string => {
     `DESCRIPTION:${escapeICS(event.description)}`,
     `LOCATION:${escapeICS(event.location)}`,
     'STATUS:CONFIRMED',
-    'SEQUENCE:0',
+    'SEQUENCE:0'
+  ];
+
+  if (event.recurrence) {
+    icsLines.push(`RRULE:${buildRRule(event.recurrence)}`);
+  }
+
+  icsLines.push(
     'BEGIN:VALARM',
     'ACTION:DISPLAY',
     'DESCRIPTION:Reminder',
@@ -114,7 +153,7 @@ export const generateICSFile = (event: EventData): string => {
     'END:VALARM',
     'END:VEVENT',
     'END:VCALENDAR'
-  ];
+  );
 
   return icsLines.join('\r\n');
 };

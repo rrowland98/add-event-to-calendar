@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { EventData } from '../types';
+import React, { useState, useEffect } from 'react';
+import { EventData, WEEK_DAYS } from '../types';
 import { formatDateTimeForDisplay } from '../utils/timeUtils';
 import { 
   generateGoogleLink, 
@@ -15,10 +15,40 @@ interface EventPreviewProps {
 
 const EventPreview: React.FC<EventPreviewProps> = ({ data, isAttendeeMode = false }) => {
   const [showModal, setShowModal] = useState(false);
+  const [imgError, setImgError] = useState(false);
+
+  // Reset error state when url changes
+  useEffect(() => {
+    setImgError(false);
+  }, [data.imageUrl]);
 
   const getGoogleUrl = () => generateGoogleLink(data);
   const getOutlookUrl = () => generateOutlookLink(data);
   const getYahooUrl = () => generateYahooLink(data);
+
+  // Generate recurrence string for display
+  const getRecurrenceText = () => {
+    if (!data.recurrence) return null;
+    const { frequency, interval, weekDays } = data.recurrence;
+    
+    let text = `Every ${interval > 1 ? interval + ' ' : ''}`;
+    
+    switch (frequency) {
+      case 'DAILY': text += interval > 1 ? 'days' : 'day'; break;
+      case 'WEEKLY': text += interval > 1 ? 'weeks' : 'week'; break;
+      case 'MONTHLY': text += interval > 1 ? 'months' : 'month'; break;
+      case 'YEARLY': text += interval > 1 ? 'years' : 'year'; break;
+    }
+
+    if (frequency === 'WEEKLY' && weekDays.length > 0) {
+      const days = weekDays.map(d => WEEK_DAYS.find(wd => wd.value === d)?.label).join(', ');
+      text += ` on ${days}`;
+    }
+
+    return text;
+  };
+
+  const recurrenceText = getRecurrenceText();
 
   return (
     <>
@@ -28,12 +58,22 @@ const EventPreview: React.FC<EventPreviewProps> = ({ data, isAttendeeMode = fals
         <div className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden transform transition-all duration-300">
           {/* Header Image Area */}
           <div className="h-48 bg-slate-100 relative flex items-center justify-center overflow-hidden">
-            {data.imageUrl ? (
-              <img src={data.imageUrl} alt="Event Header" className="w-full h-full object-cover" />
+            {data.imageUrl && !imgError ? (
+              <img 
+                src={data.imageUrl} 
+                alt="Event Header" 
+                className="w-full h-full object-cover" 
+                onError={() => setImgError(true)}
+              />
             ) : (
               <div className="text-slate-300 flex flex-col items-center">
                 <i className="fas fa-calendar-alt text-4xl mb-2"></i>
                 <span className="text-sm font-medium">Event Invitation</span>
+                {data.imageUrl && imgError && !isAttendeeMode && (
+                   <span className="text-xs text-red-400 mt-1 font-medium px-2 text-center">
+                     Image failed to load. Check URL.
+                   </span>
+                )}
               </div>
             )}
             
@@ -58,7 +98,14 @@ const EventPreview: React.FC<EventPreviewProps> = ({ data, isAttendeeMode = fals
                 <div className="w-8 flex justify-center">
                   <i className="far fa-clock text-blue-500 text-lg"></i>
                 </div>
-                <span>{formatDateTimeForDisplay(data.startDate, data.startTime, data.timezone)}</span>
+                <div>
+                   <div>{formatDateTimeForDisplay(data.startDate, data.startTime, data.timezone)}</div>
+                   {recurrenceText && (
+                     <div className="text-xs text-slate-400 font-semibold uppercase tracking-wider mt-1 flex items-center gap-1">
+                       <i className="fas fa-redo-alt text-[10px]"></i> {recurrenceText}
+                     </div>
+                   )}
+                </div>
               </div>
 
               <div className="flex items-start text-slate-600 text-sm font-medium">
@@ -114,6 +161,13 @@ const EventPreview: React.FC<EventPreviewProps> = ({ data, isAttendeeMode = fals
                 </button>
               </div>
 
+              {data.recurrence && (
+                <div className="mb-4 p-3 bg-blue-50 text-blue-800 text-xs rounded-lg border border-blue-100 flex gap-2">
+                  <i className="fas fa-info-circle mt-0.5"></i>
+                  <span>For recurring events, <strong>Google Calendar</strong> and <strong>Apple/Outlook (.ics)</strong> provide the best support.</span>
+                </div>
+              )}
+
               <div className="space-y-3">
                 <a
                   href={getGoogleUrl()}
@@ -128,6 +182,20 @@ const EventPreview: React.FC<EventPreviewProps> = ({ data, isAttendeeMode = fals
                   <i className="fas fa-chevron-right text-slate-300 group-hover:text-blue-500"></i>
                 </a>
                 
+                <button
+                  onClick={() => downloadICS(data)}
+                  className="flex items-center justify-between w-full p-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold rounded-xl transition-all group"
+                >
+                  <div className="flex items-center gap-3">
+                    <i className="fas fa-file-download text-xl text-slate-600 group-hover:text-slate-900"></i>
+                    <span>Apple / Outlook (.ics)</span>
+                  </div>
+                   <div className="flex items-center gap-2">
+                     {data.recurrence && <span className="text-[10px] uppercase font-bold text-green-600 bg-green-100 px-2 py-0.5 rounded">Best</span>}
+                     <i className="fas fa-download text-slate-400 group-hover:text-slate-600"></i>
+                   </div>
+                </button>
+
                 <a
                   href={getOutlookUrl()}
                   target="_blank"
@@ -136,7 +204,7 @@ const EventPreview: React.FC<EventPreviewProps> = ({ data, isAttendeeMode = fals
                 >
                   <div className="flex items-center gap-3">
                     <i className="fab fa-microsoft text-xl text-slate-600 group-hover:text-blue-600"></i>
-                    <span>Outlook.com</span>
+                    <span>Outlook.com Web</span>
                   </div>
                   <i className="fas fa-chevron-right text-slate-300 group-hover:text-blue-500"></i>
                 </a>
@@ -153,17 +221,6 @@ const EventPreview: React.FC<EventPreviewProps> = ({ data, isAttendeeMode = fals
                   </div>
                    <i className="fas fa-chevron-right text-slate-300 group-hover:text-purple-500"></i>
                 </a>
-
-                <button
-                  onClick={() => downloadICS(data)}
-                  className="flex items-center justify-between w-full p-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold rounded-xl transition-all group"
-                >
-                  <div className="flex items-center gap-3">
-                    <i className="fas fa-file-download text-xl text-slate-600 group-hover:text-slate-900"></i>
-                    <span>Apple / Outlook (.ics)</span>
-                  </div>
-                   <i className="fas fa-download text-slate-400 group-hover:text-slate-600"></i>
-                </button>
               </div>
             </div>
           </div>
