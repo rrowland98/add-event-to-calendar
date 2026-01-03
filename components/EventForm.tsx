@@ -11,11 +11,6 @@ interface EventFormProps {
 const EventForm: React.FC<EventFormProps> = ({ data, onChange, onGenerateShareLink }) => {
   const timeOptions = generateTimeOptions();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  // Refs for date inputs to programmatically open the picker
-  const startDateRef = useRef<HTMLInputElement>(null);
-  const endDateRef = useRef<HTMLInputElement>(null);
-
   const [copyStatus, setCopyStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -58,20 +53,6 @@ const EventForm: React.FC<EventFormProps> = ({ data, onChange, onGenerateShareLi
     }
   }
 
-  // Helper to open the native date picker when icon is clicked
-  const openDatePicker = (ref: React.RefObject<HTMLInputElement>) => {
-    if (ref.current && 'showPicker' in ref.current) {
-      try {
-        (ref.current as any).showPicker();
-      } catch (err) {
-        // Fallback or ignore if browser doesn't support it
-        ref.current.focus();
-      }
-    } else {
-      ref.current?.focus();
-    }
-  };
-
   const inputClass = "w-full rounded-md border border-gray-300 bg-white text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow placeholder-gray-400";
 
   return (
@@ -88,23 +69,14 @@ const EventForm: React.FC<EventFormProps> = ({ data, onChange, onGenerateShareLi
           <div className="space-y-4">
             <label className="block text-sm font-semibold text-slate-700">Start</label>
             <div className="flex gap-2">
-              <div className="relative flex-grow">
-                <input
-                  ref={startDateRef}
-                  type="date"
-                  name="startDate"
-                  value={data.startDate}
-                  onChange={handleChange}
-                  className={`${inputClass} pr-10`}
-                  style={{ colorScheme: 'light' }}
-                />
-                <div 
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 cursor-pointer hover:text-blue-500 transition-colors"
-                  onClick={() => openDatePicker(startDateRef)}
-                >
-                  <i className="fas fa-calendar-alt"></i>
-                </div>
-              </div>
+              <input
+                type="date"
+                name="startDate"
+                value={data.startDate}
+                onChange={handleChange}
+                className={inputClass}
+                style={{ colorScheme: 'light' }}
+              />
               <select
                 name="startTime"
                 value={data.startTime}
@@ -124,23 +96,14 @@ const EventForm: React.FC<EventFormProps> = ({ data, onChange, onGenerateShareLi
           <div className="space-y-4">
             <label className="block text-sm font-semibold text-slate-700">End</label>
             <div className="flex gap-2">
-              <div className="relative flex-grow">
-                <input
-                  ref={endDateRef}
-                  type="date"
-                  name="endDate"
-                  value={data.endDate}
-                  onChange={handleChange}
-                  className={`${inputClass} pr-10`}
-                  style={{ colorScheme: 'light' }}
-                />
-                 <div 
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 cursor-pointer hover:text-blue-500 transition-colors"
-                  onClick={() => openDatePicker(endDateRef)}
-                >
-                  <i className="fas fa-calendar-alt"></i>
-                </div>
-              </div>
+              <input
+                type="date"
+                name="endDate"
+                value={data.endDate}
+                onChange={handleChange}
+                className={inputClass}
+                style={{ colorScheme: 'light' }}
+              />
               <select
                 name="endTime"
                 value={data.endTime}
