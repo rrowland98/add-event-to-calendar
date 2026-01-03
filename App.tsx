@@ -58,11 +58,6 @@ const App: React.FC = () => {
              <div className="w-full max-w-lg">
                 <EventPreview data={eventData} isAttendeeMode={true} />
              </div>
-             <div className="mt-8 text-center">
-                <a href="/" className="text-sm text-slate-400 hover:text-slate-600 transition-colors">
-                  Create your own event link
-                </a>
-             </div>
           </div>
         ) : (
           // ADMIN MODE: Split Screen
