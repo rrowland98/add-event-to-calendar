@@ -2,7 +2,7 @@
 import { EventData, RecurrenceSettings } from '../types';
 
 /**
- * Formats a date string and time string into a format suitable for Google/ICS.
+ * Formats a date string and time string into a format suitable for Google/ICS/Yahoo.
  * Note: We do NOT convert to UTC here because we want to preserve the "wall clock" 
  * time the user entered, and then tell the calendar service which timezone that clock belongs to.
  */
@@ -12,6 +12,19 @@ const formatCalendarDateTime = (date: string, time: string): string => {
 
 const formatICSDate = (date: Date): string => {
   return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+};
+
+/**
+ * Calculates duration in HHmm format for Yahoo
+ */
+const calculateDuration = (event: EventData): string => {
+  const start = new Date(`${event.startDate}T${event.startTime}`);
+  const end = new Date(`${event.endDate}T${event.endTime}`);
+  const diffMs = end.getTime() - start.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const hours = Math.floor(diffMins / 60);
+  const mins = diffMins % 60;
+  return `${String(hours).padStart(2, '0')}${String(mins).padStart(2, '0')}`;
 };
 
 const buildRRule = (settings: RecurrenceSettings): string => {
@@ -50,10 +63,8 @@ export const generateGoogleCalendarUrl = (event: EventData): string => {
 };
 
 export const generateYahooCalendarUrl = (event: EventData): string => {
-  // Yahoo is less timezone aware in URLs, typically uses UTC or local. 
-  // For better compatibility, we treat as local.
   const start = formatCalendarDateTime(event.startDate, event.startTime);
-  const end = formatCalendarDateTime(event.endDate, event.endTime);
+  const duration = calculateDuration(event);
 
   const params = [
     'v=60',
@@ -61,12 +72,17 @@ export const generateYahooCalendarUrl = (event: EventData): string => {
     'type=20',
     `title=${encodeURIComponent(event.title)}`,
     `st=${start}`,
-    `et=${end}`,
+    `dur=${duration}`,
     `desc=${encodeURIComponent(event.description)}`,
     `in_loc=${encodeURIComponent(event.location)}`
-  ].join('&');
+  ];
 
-  return `https://calendar.yahoo.com/?${params}`;
+  if (event.recurrence) {
+    // Yahoo accepts the rrule parameter in the v=60 template
+    params.push(`rrule=${encodeURIComponent(buildRRule(event.recurrence))}`);
+  }
+
+  return `https://calendar.yahoo.com/?${params.join('&')}`;
 };
 
 export const generateICSFile = (event: EventData): string => {
