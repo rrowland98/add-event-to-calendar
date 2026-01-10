@@ -93,6 +93,7 @@ const EventForm: React.FC<EventFormProps> = ({ data, onChange, onGenerateShareLi
   }
 
   const inputClass = "w-full rounded-md border border-gray-300 bg-white text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder-gray-400";
+  const smallInputClass = "px-2 py-1 border border-slate-300 rounded bg-white text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all";
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8 flex flex-col h-full">
@@ -144,9 +145,23 @@ const EventForm: React.FC<EventFormProps> = ({ data, onChange, onGenerateShareLi
           <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-4 animate-fade-in-up">
             <div className="flex items-center gap-2 text-sm text-slate-700">
               <span>Repeat every</span>
-              <input type="number" min="1" max="99" value={data.recurrence.interval} onChange={(e) => updateRecurrence({ interval: Math.max(1, parseInt(e.target.value) || 1) })} className="w-16 px-2 py-1 border border-slate-300 rounded text-center" />
-              <select value={data.recurrence.frequency} onChange={(e) => updateRecurrence({ frequency: e.target.value as any })} className="px-2 py-1 border border-slate-300 rounded">
-                <option value="DAILY">day</option><option value="WEEKLY">week</option><option value="MONTHLY">month</option><option value="YEARLY">year</option>
+              <input 
+                type="number" 
+                min="1" 
+                max="99" 
+                value={data.recurrence.interval} 
+                onChange={(e) => updateRecurrence({ interval: Math.max(1, parseInt(e.target.value) || 1) })} 
+                className={`${smallInputClass} w-16 text-center`}
+              />
+              <select 
+                value={data.recurrence.frequency} 
+                onChange={(e) => updateRecurrence({ frequency: e.target.value as any })} 
+                className={`${smallInputClass}`}
+              >
+                <option value="DAILY">day</option>
+                <option value="WEEKLY">week</option>
+                <option value="MONTHLY">month</option>
+                <option value="YEARLY">year</option>
               </select>
             </div>
             {data.recurrence.frequency === 'WEEKLY' && (
@@ -162,9 +177,30 @@ const EventForm: React.FC<EventFormProps> = ({ data, onChange, onGenerateShareLi
             <div className="space-y-2">
               <span className="text-xs font-semibold text-slate-500 uppercase">Ends</span>
               <div className="space-y-2 text-sm text-slate-700">
-                <label className="flex items-center gap-2 cursor-pointer"><input type="radio" checked={data.recurrence.ends === 'never'} onChange={() => updateRecurrence({ ends: 'never' })} /> Never</label>
-                <label className="flex items-center gap-2 cursor-pointer"><input type="radio" checked={data.recurrence.ends === 'on'} onChange={() => updateRecurrence({ ends: 'on' })} /> On <input type="date" value={data.recurrence.endDate || ''} onChange={(e) => updateRecurrence({ ends: 'on', endDate: e.target.value })} disabled={data.recurrence.ends !== 'on'} className="ml-1 px-2 py-1 border rounded text-xs" /></label>
-                <label className="flex items-center gap-2 cursor-pointer"><input type="radio" checked={data.recurrence.ends === 'after'} onChange={() => updateRecurrence({ ends: 'after' })} /> After <input type="number" value={data.recurrence.count || ''} onChange={(e) => updateRecurrence({ ends: 'after', count: parseInt(e.target.value) })} disabled={data.recurrence.ends !== 'after'} className="ml-1 w-16 px-2 py-1 border rounded text-xs text-center" /> occurrences</label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" checked={data.recurrence.ends === 'never'} onChange={() => updateRecurrence({ ends: 'never' })} className="accent-blue-600" /> Never
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" checked={data.recurrence.ends === 'on'} onChange={() => updateRecurrence({ ends: 'on' })} className="accent-blue-600" /> On 
+                  <input 
+                    type="date" 
+                    value={data.recurrence.endDate || ''} 
+                    onChange={(e) => updateRecurrence({ ends: 'on', endDate: e.target.value })} 
+                    disabled={data.recurrence.ends !== 'on'} 
+                    className={`${smallInputClass} ml-1 text-xs ${data.recurrence.ends !== 'on' ? 'opacity-50 cursor-not-allowed bg-slate-100' : ''}`}
+                    style={{ colorScheme: 'light' }}
+                  />
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" checked={data.recurrence.ends === 'after'} onChange={() => updateRecurrence({ ends: 'after' })} className="accent-blue-600" /> After 
+                  <input 
+                    type="number" 
+                    value={data.recurrence.count || ''} 
+                    onChange={(e) => updateRecurrence({ ends: 'after', count: parseInt(e.target.value) })} 
+                    disabled={data.recurrence.ends !== 'after'} 
+                    className={`${smallInputClass} ml-1 w-16 text-xs text-center ${data.recurrence.ends !== 'after' ? 'opacity-50 cursor-not-allowed bg-slate-100' : ''}`}
+                  /> occurrences
+                </label>
               </div>
             </div>
           </div>
