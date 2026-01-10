@@ -129,7 +129,7 @@ const App: React.FC = () => {
           // ATTENDEE MODE: Centered Card Only
           <div className="flex flex-col items-center justify-center min-h-[60vh] animate-fade-in">
              <div className="w-full max-w-lg">
-                <EventPreview data={eventData} isAttendeeMode={true} />
+                <EventPreview eventData={eventData} isAttendeeMode={true} />
              </div>
           </div>
         ) : (
@@ -151,7 +151,7 @@ const App: React.FC = () => {
                 <div className="mb-4 flex items-center justify-between lg:hidden">
                    <span className="text-sm font-bold text-slate-400 uppercase tracking-wider">Live Preview</span>
                 </div>
-                <EventPreview data={eventData} />
+                <EventPreview eventData={eventData} />
               </div>
             </div>
 

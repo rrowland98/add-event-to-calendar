@@ -1,3 +1,4 @@
+
 export interface EventData {
   title: string;
   startDate: string; // YYYY-MM-DD
@@ -11,6 +12,9 @@ export interface EventData {
   imageUrl: string | null;
   recurrence: RecurrenceSettings | null;
 }
+
+// Global default image for all events (can be a company logo or generic pattern)
+export const DEFAULT_IMAGE_URL = 'https://i.postimg.cc/WzvQY4mR/Add-To-My-Calendar.png';
 
 // Interface for local storage history
 export interface SavedEvent {
@@ -81,6 +85,6 @@ export const INITIAL_EVENT_DATA: EventData = {
   location: '',
   description: '',
   reminderMinutes: 30,
-  imageUrl: null,
+  imageUrl: null, // Starts as null to use global default
   recurrence: null,
 };
